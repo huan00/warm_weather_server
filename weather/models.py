@@ -5,8 +5,10 @@ from django.db import models
 
 class Weather(models.Model):
     date = models.CharField(max_length=50)
-    temperature = models.CharField(max_length=50)
-    wind = models.CharField(max_length=50)
+    temperature_high = models.CharField(max_length=50)
+    temperature_low = models.CharField(max_length=50)
+    temperature_avg = models.CharField(max_length=50)
+    wind_mph = models.CharField(max_length=50)
     condition = models.CharField(max_length=50)
     feels_like = models.CharField(max_length=50)
     humidity = models.CharField(max_length=50)
