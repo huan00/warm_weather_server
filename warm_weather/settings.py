@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-a34&1r%a6op3onnew1e++y2d#kg8l_j+691dy8a+2*ubvfpcn9
 DEBUG = True
 
 ALLOWED_HOSTS = []
+AUTH_USER_MODEL = 'user.User'
 
 
 # Application definition
@@ -40,7 +41,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'weather',
     'survey',
-    'user'
+    'user',
+    'rest_framework.authtoken',
+    'psycopg2'
 ]
 
 MIDDLEWARE = [
@@ -52,6 +55,17 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': (
+#         'rest_framework.authentication.BasicAuthentication',
+#         'rest_framework.authentication.SessionAuthentication',
+#     )
+# }
 
 ROOT_URLCONF = 'warm_weather.urls'
 
@@ -87,7 +101,6 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = 'user.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

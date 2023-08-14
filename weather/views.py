@@ -4,7 +4,7 @@ from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework import generics, permissions
-from .serializer import WeatherSerializer
+from .serializers import WeatherSerializer
 from .models import Weather
 # Create your views here.
 
