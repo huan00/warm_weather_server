@@ -9,6 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+                  'id',
                   'username', 
                   'password',
                   'email', 
@@ -27,21 +28,23 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data['password'] = make_password(validated_data['password'])
         return super(UserSerializer, self).create(validated_data)
 
-# class UserLoginSerializer(serializers.ModelSerializer):
-#     password = serializers.CharField(write_only=True)
+class UserUpdateSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(read_only=True)
+    email = serializers.CharField(read_only=True)
+
     
-#     class Meta:
-#         model = User
-#         fields = (
-#                     'id',
-#                     'username', 
-#                     'email', 
-#                     'first_name', 
-#                     'last_name', 
-#                     'address', 
-#                     'city', 
-#                     'state', 
-#                     'zip_code'
-#                   )
+    class Meta:
+        model = User
+        fields = (
+                    'id', 
+                    'username',
+                    'email',
+                    'first_name', 
+                    'last_name', 
+                    'address', 
+                    'city', 
+                    'state', 
+                    'zip_code'
+                  )
         
 
