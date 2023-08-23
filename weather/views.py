@@ -1,31 +1,37 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from rest_framework.response import Response
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions,status
 from .serializers import WeatherSerializer
 from .models import Weather
 # Create your views here.
 
 
-# class CurrentWeather(generics.CreateAPIView):
-#     permission_classes = [permissions.AllowAny]
+class CurrentWeather(generics.CreateAPIView):
+    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
+    serializer_class = WeatherSerializer
 
 
-@csrf_exempt
-@api_view(['GET', 'POST'])
-def weather_list(request):
-    # before creating weather we need to create survey
+    def post(self, request):
+        weather_serializer = self.serializer_class(data=request.data)
 
-    if request.method == 'POST':
-        data = request.data
-        date = request.data['date']
-        zip_code = request.data['zip_code']
-        location = request.data['location']
-        date_exist = Weather.objects.filter(date=date)
-        print(date_exist)
-        if date_exist:
-            return HttpResponse('exist')
-        else:
-            return HttpResponse('don\'t exist')
+        if weather_serializer.is_valid(raise_exception=True):
+            weather_exist = Weather.objects.filter(
+                                                weather_date=weather_serializer.data['weather_date'],
+                                                zip_code=weather_serializer.data['zip_code'], 
+                                                location=weather_serializer.data['location']
+                                                )
+            if not weather_exist:
+                weather = self.create(weather_serializer)
+                return Response(weather.data, status=status.HTTP_200_OK)
+            else:
+                
+                weather = self.serializer_class(weather_exist, many=True)
+
+                return Response(weather.data, status=status.HTTP_200_OK)
+
+
+

@@ -1,7 +1,7 @@
 from django.urls import path, include
-
+from .views import CurrentWeather
 from . import views
 
 urlpatterns = [
-    path('create/', views.weather_list, name='create_weather')
+    path('create', CurrentWeather.as_view(), name='create_weather')
 ]

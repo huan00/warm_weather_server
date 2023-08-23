@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 from rest_framework.decorators import api_view
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, UserUpdateSerializer 
+from .serializers import UserRegisterSerializer, UserLoginSerializer, UserUpdateSerializer, UserSurveyDetailSerializer
 from rest_framework.views import APIView
 from rest_framework.authtoken.views import ObtainAuthToken
 import bcrypt
@@ -17,18 +17,18 @@ import bcrypt
 
 
 class RegisterUser(CreateAPIView):
-    # queryset = User.objects.all()
     permissions_classes = [permissions.AllowAny]
-    serializer_class = UserSerializer
+    serializer_class = UserRegisterSerializer
     
     # register view logic
     def post(self, request):
         # create a serializer of the input data
         serializer = self.serializer_class(data=request.data)
         # if data are valid create user, else raise error
-        if serializer.is_valid(raise_exception=True):
-            if not isinstance(int(serializer.data['zip_code']), int):
-                raise ValueError('Zip code is invalid')
+        if serializer.is_valid():
+            print(serializer)
+            # if not isinstance(int(serializer.data['zip_code']), int):
+            #     raise ValueError('Zip code is invalid')
 
             # call create function to create user
             self.create(serializer)    
@@ -39,14 +39,12 @@ class RegisterUser(CreateAPIView):
             # return reponse
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         else:
+            print(serializer.data)
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-        
-
 class LoginView(ObtainAuthToken):
-    serializer_class = UserSerializer
+    serializer_class = UserLoginSerializer
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -72,9 +70,6 @@ class LoginView(ObtainAuthToken):
         else:
             return Response({'error': 'unable to retrive user'}, status=status.HTTP_404_NOT_FOUND)
 
-
-
-# class UpdateView(viewsets.ModelViewSet):
 class UpdateView(ObtainAuthToken):
     # permissions_classes = [permissions.AllowAny]
     authentication_classes = [TokenAuthentication]
@@ -97,6 +92,9 @@ class UpdateView(ObtainAuthToken):
 
         # update user data from request data
         for data in request.data:
+            if data == 'zip_code':
+                if not isinstance(int(request.data[data]), int):
+                    raise ValueError('zip code unacceptable, please check!')
             user_serializer[data] = request.data[data].lower()
         
         # serializer updated data
@@ -108,8 +106,6 @@ class UpdateView(ObtainAuthToken):
         # return updated user to client.
         return Response(user_serializer.data, status=status.HTTP_202_ACCEPTED)
 
-
-
 class DeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -117,6 +113,7 @@ class DeleteView(APIView):
     def delete(self, request, pk=None):
         user_id = Token.objects.get(key=request.auth).user_id
 
+        # make sure user_id and pk are the same before delete
         if pk != user_id:
             return Response({'error': 'user input conflict'}, status=status.HTTP_409_CONFLICT)
         
@@ -124,3 +121,15 @@ class DeleteView(APIView):
         user.delete()
 
         return Response({"message": "user deleted"}, status=status.HTTP_202_ACCEPTED)
+
+class GetUserView(APIView):
+    permission_classes=[permissions.AllowAny]
+
+    def get(self, request, pk=None):
+        user = User.objects.get(pk=pk)
+
+        user_serializer = UserSurveyDetailSerializer(user)
+
+        print(user_serializer)
+
+        return Response(user_serializer.data)

@@ -2,15 +2,25 @@ from rest_framework import serializers
 from .models import Weather
 
 
-class WeatherSerializer(serializers.Serializer):
-
-    # date = serializers.DateField()
-    # temperature = serializers.CharField(max_length=50)
-    # wind = serializers.CharField(max_length=50)
-    # condition = serializers.CharField(max_length=50)
-    # feels_like = serializers.CharField(max_length=50)
-    # humidity = serializers.CharField(max_length=50)
+class WeatherSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Weather
         fields = '__all__'
+        # fields = (
+        #         'id',
+        #         'weather_date',
+        #         'temperature_high',
+        #         'temperature_low',
+        #         'temperature_avg',
+        #         'wind_mph',
+        #         'condition',
+        #         'feels_like',
+        #         'humidity',
+        #         'location',
+        #         'zip_code',
+        #         )
+
+    def create(self, validated_data):
+        return super(WeatherSerializer, self).create(validated_data)
+        
