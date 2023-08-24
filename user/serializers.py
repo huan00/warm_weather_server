@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from .models import User
-from survey.serializers import SurveyQuestionSerializer
+from survey.serializers import SurveyDetailSerializer
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -68,7 +68,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         
 
 class UserSurveyDetailSerializer(serializers.ModelSerializer):
-    surveys = SurveyQuestionSerializer(many=True)
+    surveys = SurveyDetailSerializer(many=True)
 
     class Meta:
         model = User

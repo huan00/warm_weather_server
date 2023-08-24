@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from .models import User
+from survey.models import Survey
+from survey.serializers import UserSurveySerializer
 from rest_framework.authtoken.models import Token
 from rest_framework import viewsets, permissions, status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
@@ -13,6 +15,12 @@ from .serializers import UserRegisterSerializer, UserLoginSerializer, UserUpdate
 from rest_framework.views import APIView
 from rest_framework.authtoken.views import ObtainAuthToken
 import bcrypt
+import openai
+
+import os
+
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+
 # Create your views here.
 
 
@@ -123,13 +131,28 @@ class DeleteView(APIView):
         return Response({"message": "user deleted"}, status=status.HTTP_202_ACCEPTED)
 
 class GetUserView(APIView):
-    permission_classes=[permissions.AllowAny]
+    permission_classes=[permissions.IsAuthenticated]
+    authentication_classes=[TokenAuthentication]
 
     def get(self, request, pk=None):
         user = User.objects.get(pk=pk)
-
         user_serializer = UserSurveyDetailSerializer(user)
 
-        print(user_serializer)
-
         return Response(user_serializer.data)
+    
+
+    
+# analyze survey question answer and associated weather to determine, if user will be cold today.
+class GiveFeedBack(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def get(self, request, pk=None):
+        surveys = Survey.objects.filter(user=pk)
+        survey_serializer = UserSurveySerializer(surveys, many=True)
+        
+        # should i use openai or no.
+        # question should have tempeature and realfeel.
+
+        print(survey_serializer.data)
+        return Response(survey_serializer.data)

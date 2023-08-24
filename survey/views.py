@@ -1,68 +1,74 @@
 from django.shortcuts import render
-from rest_framework import permissions, generics
+from rest_framework import permissions, generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
-from weather.models import Weather
 from user.models import User
 from .models import Survey, Question
-from weather.serializers import WeatherSerializer
-from .serializers import SurveySerializer, QuestionSerializer, SurveyQuestionSerializer
+
+from .serializers import SurveySerializer, QuestionSerializer, SurveyDetailSerializer, WeatherSerializer, ClothingSerializer
 
 # Create your views here.
 
 class SurveyView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = SurveySerializer
-    survey_question_class = SurveyQuestionSerializer
-    weather_serializer_class =  WeatherSerializer
+    survey_detail_class = SurveyDetailSerializer
     question_serializer_class = QuestionSerializer
+    weather_serializer_class = WeatherSerializer
+    clothing_serializer_class = ClothingSerializer
 
     def post(self, request):
         date = request.data['date']
-        user_id = request.data['user_id']
-        weather = request.data['weather']
+        user = request.data['user']
+        question_data = request.data['question']
+        clothing_data = request.data['clothing']
+        weather_data = request.data['weather']
+        survey_data = {'survey_date':date, 'user':user}
 
-        user = User.objects.get(pk=user_id)
-        
-        # check if weather exist
-        weather_exist = Weather.objects.get(weather_date=weather['weather_date'], zip_code=weather['zip_code'], location=weather['location'])
-        if not weather_exist:
-            weather_serializer = self.weather_serializer_class(data=weather)
-            if weather_serializer.is_valid():
-                weather = Weather.objects.create(weather)
-        else:
-            weather_serializer = WeatherSerializer(weather_exist)
+        try:
+            survey_exists = Survey.objects.filter(**survey_data).exists()
+            if survey_exists:
+                return Response('Survey already exists')
+            
+            survey_serializer = self.serializer_class(data=survey_data)
 
-        survey_data = {'survey_date': date, 'user_id':user_id, 'weather_id': weather_serializer.data['id']}
-        survey_serializer = self.serializer_class(data=survey_data)
+            # create survey after checking data
+            if survey_serializer.is_valid(raise_exception=True):
+                survey=self.create(survey_serializer)
 
-        if survey_serializer.is_valid(raise_exception=True):
-            survey = self.create(survey_serializer)
-            survey_id = Survey.objects.get(pk=survey.data['id'])
+                # create questions
+                question_serializer = QuestionSerializer(data={**question_data, 'survey':survey.data['id']})
+                if question_serializer.is_valid(raise_exception=True):
+                    question_serializer.save()
 
-            question_data = request.data['question']
-            question = Question.objects.create(**question_data, survey_id=survey_id)
-            question.save()
+                # create weather
+                weather_serializer = self.weather_serializer_class(data={**weather_data, 'survey_weather': survey.data['id']})
+                if weather_serializer.is_valid(raise_exception=True):
+                    weather_serializer.save()
+                #create clothing
+                clothing_serializer = self.clothing_serializer_class(data={**clothing_data, 'survey_clothing': survey.data['id']})
+                if clothing_serializer.is_valid(raise_exception=True):
+                    clothing_serializer.save()
 
-        else:
+                # pull data from survey, clothing, weather, and question for response
+                survey_response = Survey.objects.get(pk=survey.data['id'])
+                survey_response = SurveyDetailSerializer(survey_response)
 
-            print(survey_serializer.errors)
-
-        response_data = SurveyQuestionSerializer(survey_id)
-        print(response_data.data)
-
-        # return Response('hello')
-        
-        return Response(response_data.data)
+                return Response(survey_response.data, status=status.HTTP_201_CREATED)
+        except:
+            # if error delete created survey.
+            survey = Survey.objects.get(**survey_data)
+            survey.delete()
+            return Response({'msg': 'error creating survey'}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
 def get_survey(request, pk=None):
     survey = Survey.objects.get(pk=pk)
-    print('hello')
-    survey_serializer = SurveyQuestionSerializer(survey)
+
+    survey_serializer = SurveyDetailSerializer(survey)
     print(survey_serializer.data)
-    # return Response('hello')
+
     return Response(survey_serializer.data)
 
 
