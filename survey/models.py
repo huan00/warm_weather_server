@@ -11,6 +11,9 @@ class Survey(models.Model):
 
     def __str__(self):
         return str(self.id)
+    
+    class Meta:
+        ordering = ['id']
 
 
 class Question(models.Model):
@@ -22,6 +25,9 @@ class Question(models.Model):
 
     def __str__(self):
         return self.id
+
+    class Meta:
+        ordering = ['id']
 
 
 class Clothing(models.Model):
@@ -36,6 +42,9 @@ class Clothing(models.Model):
     def __str__(self):
         return self.id
     
+    class Meta:
+        ordering = ['id']
+    
 
 class Weather(models.Model):
     survey_weather = models.OneToOneField(Survey, on_delete=models.CASCADE)
@@ -47,3 +56,9 @@ class Weather(models.Model):
     condition = models.CharField(max_length=50)
     feels_like = models.CharField(max_length=50)
     humidity = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.id
+
+    class Meta:
+        ordering = ['id']

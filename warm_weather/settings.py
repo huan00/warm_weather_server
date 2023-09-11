@@ -30,6 +30,10 @@ SECRET_KEY = 'django-insecure-a34&1r%a6op3onnew1e++y2d#kg8l_j+691dy8a+2*ubvfpcn9
 DEBUG = True
 
 ALLOWED_HOSTS = []
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:3000",
+    "https://example.com",
+]
 AUTH_USER_MODEL = 'user.User'
 
 
@@ -46,12 +50,15 @@ INSTALLED_APPS = [
     'survey',
     'user',
     'rest_framework.authtoken',
-    'psycopg2'
+    'psycopg2',
+    'corsheaders',
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
