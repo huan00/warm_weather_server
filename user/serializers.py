@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from .models import User
 from survey.serializers import SurveyDetailSerializer
+from prompts.serializers import PromptsSerializer
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -31,6 +32,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 class UserLoginSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    prompts = PromptsSerializer(read_only=True)
     
     class Meta:
         model = User
@@ -44,7 +46,8 @@ class UserLoginSerializer(serializers.ModelSerializer):
                   'address', 
                   'city', 
                   'state', 
-                  'zip_code'
+                  'zip_code',
+                  'prompts'
                   )
 
 class UserUpdateSerializer(serializers.ModelSerializer):

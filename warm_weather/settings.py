@@ -29,11 +29,16 @@ SECRET_KEY = 'django-insecure-a34&1r%a6op3onnew1e++y2d#kg8l_j+691dy8a+2*ubvfpcn9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000',
+# ]
 CORS_ORIGIN_WHITELIST = [
     "http://localhost:3000",
-    "https://example.com",
 ]
+CORS_ALLOW_HEADERS = ('content-disposition', 'accept-encoding',
+                      'content-type', 'accept', 'origin', 'authorization')
 AUTH_USER_MODEL = 'user.User'
 
 
@@ -52,6 +57,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'psycopg2',
     'corsheaders',
+    'prompts'
 
 ]
 

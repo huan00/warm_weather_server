@@ -23,7 +23,6 @@ class QuestionSerializer(serializers.ModelSerializer):
                   'survey')
 
         def create(self, validated_data):
-            print('create question')
             return super(QuestionSerializer, self).create(validated_data)
 
 

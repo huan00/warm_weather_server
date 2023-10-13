@@ -170,7 +170,7 @@ class Outfit(BaseModel):
     bottom: list[str] = Field(description='bottom item list')
     shoe: list[str] = Field(description='shoe item list')
     accessory: list[str] = Field(description='accessory item list')
-    suggestion: str = Field(description='give a brief summary of the wear and a suggestion on outfit to wear. under 20 words')
+    suggestion: str = Field(description='under 20 words, give a brief summary of the wear and a suggestion on outfit to wear.')
 
 
 
@@ -217,16 +217,26 @@ def get_outfit(request):
 
 @api_view(['POST'])
 def get_my_outfit(request):
-    parser = PydanticOutputParser(pydantic_object=Outfit)
+    # parser = PydanticOutputParser(pydantic_object=Outfit)
     weather = request.data
-    gender = 'female'
+    gender = weather['gender']
+    sensitivity = weather['sensitivity']
+
 
     query =f"""
             You are a meteorologist and a fashion dresser. Given today's weather condition delimiter by ```. \
-            Generate an appropriate {gender} outfit for today's weather condition. Outfit should consider what tops, jacket, bottom, footware and accessories to wear.
+            Generate an appropriate {gender} outfit for today's weather condition. following these rules. \
+             
+            1. Outfit should consider what tops, jacket, pants, footware and accessories to wear. \
+            2. return one item for jacket or not required. \   
+            3. only return one item for pants. \
+            4. only return one item for shoe. \
+            5. consider my sensitivity to cold, i usually feel {sensitivity}. \
+            6. return response in json format delimiter by ''' \
+            
 
             tops should only consist of inner layer and mid layer.
-            jacket should be consist of tops outer layer and jacket.
+            jacket should be consist of tops outer layer and jacket, mark as not required if not appropriate for weather.
 
             ```
                 Here are today's weather condition: \
@@ -237,13 +247,23 @@ def get_my_outfit(request):
                     condition: {weather["condition"]}
             ```
 
+            '''
+                "head": list,
+                "tops": list,
+                "jacket": list,
+                "pants": list,
+                "shoe": list,
+                "accessory": list,
+                "suggestion": string
+            '''
+            
             """
 
     prompt = PromptTemplate(
-        template='Anwser the user query.\n{format_instructions}\n{query}\n',
-        # template='Anwser the user query.\n{query}\n',
+        # template='Anwser the user query.\n{format_instructions}\n{query}\n',
+        template='Anwser the user query.\n{query}\n',
         input_variables=['query'],
-        partial_variables={'format_instructions': parser.get_format_instructions()}
+        # partial_variables={'format_instructions': parser.get_format_instructions()}
     )
 
     # print(parser.get_format_instructions())
@@ -251,15 +271,11 @@ def get_my_outfit(request):
     _input = prompt.format_prompt(query=query)
     output = model(_input.to_string())
 
-    _output = parser.parse(output)
-    print(output)
-    # _output = StructuredOutputParser.from_response_schemas(output)
 
-    print(_output)
+    # _output = parser.parse(output)
+    # _output = StructuredOutputParser.from_response_schemas(output)
     _output = json.loads(output)
-    # print(_output)
-    # print(output)
-    # print(_output)
+
 
 
     return Response(_output, status=status.HTTP_200_OK)
