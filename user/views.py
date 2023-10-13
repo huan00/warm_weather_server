@@ -3,6 +3,8 @@ from django.shortcuts import render
 from .models import User
 from survey.models import Survey
 from survey.serializers import UserSurveySerializer
+from prompts.models import Prompts
+from prompts.serializers import PromptsSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework import viewsets, permissions, status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
@@ -44,24 +46,45 @@ class RegisterUser(CreateAPIView):
     
     # register view logic
     def post(self, request):
+       
+
         # create a serializer of the input data
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data['userData'])
+
         # if data are valid create user, else raise error
         if serializer.is_valid():
-            print(serializer)
+            
             # if not isinstance(int(serializer.data['zip_code']), int):
             #     raise ValueError('Zip code is invalid')
 
             # call create function to create user
-            self.create(serializer)    
-            # get user instance from database for token creations.
+            created_user = self.create(serializer)   
+            #  
+            # create prompts
+            # get user instance from database for token creations
             user = User.objects.get(username=serializer.data['username'].lower())
+
+
+            user_serializer = self.serializer_class(user)
+  
+            promptData = {
+                'gender': 'male',
+                'sensitivity_to_cold': request.data['promptData']['sensitivityToCold'],
+                'User': user_serializer.data['id']
+            }
+
+            # prompt_serializer.is_valid(raise_exception=True)
+            # PromptsSerializer.create(prompt_serializer)
+            prompt_serializer = PromptsSerializer(data=promptData)
+            prompt_serializer.is_valid()
+            prompt_serializer.save()
+            
+
             token = Token.objects.create(user=user)
 
             # return reponse
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         else:
-            print(serializer.data)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -117,7 +140,7 @@ class UpdateView(ObtainAuthToken):
             if data == 'zip_code':
                 if not isinstance(int(request.data[data]), int):
                     raise ValueError('zip code unacceptable, please check!')
-            user_serializer[data] = request.data[data].lower()
+            user_serializer[data] = request.data[data]
         
         # serializer updated data
         user_serializer = UserUpdateSerializer(user, data=user_serializer)

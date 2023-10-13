@@ -16,9 +16,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                   'email', 
                   'first_name', 
                   'last_name', 
-                  'address', 
-                  'city', 
-                  'state', 
+                #   'address', 
+                #   'city', 
+                #   'state', 
                   'zip_code'
                   )
     
@@ -43,9 +43,9 @@ class UserLoginSerializer(serializers.ModelSerializer):
                   'email', 
                   'first_name', 
                   'last_name', 
-                  'address', 
-                  'city', 
-                  'state', 
+                #   'address', 
+                #   'city', 
+                #   'state', 
                   'zip_code',
                   'prompts'
                   )
@@ -63,9 +63,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                     'email',
                     'first_name', 
                     'last_name', 
-                    'address', 
-                    'city', 
-                    'state', 
+                    # 'address', 
+                    # 'city', 
+                    # 'state', 
                     'zip_code'
                   )
         
@@ -81,9 +81,9 @@ class UserSurveyDetailSerializer(serializers.ModelSerializer):
                   'email', 
                   'first_name', 
                   'last_name', 
-                  'address', 
-                  'city', 
-                  'state', 
+                #   'address', 
+                #   'city', 
+                #   'state', 
                   'zip_code',
                   'surveys',
                   )
