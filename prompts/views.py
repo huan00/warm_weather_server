@@ -43,14 +43,10 @@ class PromptsView(generics.CreateAPIView):
     user = User.objects.get(pk=Token.objects.get(key=request.auth).user_id).pk
 
     exist_prompt = Prompts.objects.get(User_id=user)
-    print(request.data)
 
     prompt_serializer = PromptsSerializer(exist_prompt).data
     for el in request.data:
       prompt_serializer[el] = request.data[el]
-
-    print(prompt_serializer)
-    
     
     prompt_serializer = PromptsSerializer(exist_prompt, data=prompt_serializer)
 
