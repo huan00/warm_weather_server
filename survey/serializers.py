@@ -23,7 +23,6 @@ class QuestionSerializer(serializers.ModelSerializer):
                   'survey')
 
         def create(self, validated_data):
-            print('create question')
             return super(QuestionSerializer, self).create(validated_data)
 
 
@@ -64,10 +63,12 @@ class ClothingSerializer(serializers.ModelSerializer):
 
 class UserSurveySerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
+    clothing = ClothingSerializer(read_only=True)
+    weather = WeatherSerializer(read_only=True)
 
     class Meta:
         model = Survey
-        fields=('questions')
+        fields=('survey_date','questions','clothing','weather')
 
 
 

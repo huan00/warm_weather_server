@@ -1,7 +1,10 @@
+import json
 from django.shortcuts import render
 from .models import User
 from survey.models import Survey
 from survey.serializers import UserSurveySerializer
+from prompts.models import Prompts
+from prompts.serializers import PromptsSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework import viewsets, permissions, status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
@@ -16,10 +19,23 @@ from rest_framework.views import APIView
 from rest_framework.authtoken.views import ObtainAuthToken
 import bcrypt
 import openai
+from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
+from langchain import PromptTemplate
+from langchain.prompts.chat import (ChatPromptTemplate, SystemMessagePromptTemplate, AIMessagePromptTemplate, HumanMessagePromptTemplate)
+from langchain.output_parsers import PydanticOutputParser, StructuredOutputParser
+from pydantic import BaseModel, Field, validator, conlist
+from typing import List, Dict
+from langchain.prompts import PromptTemplate
+from .prompts import query_input, query_input_outfit
 
 import os
 
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+# llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY)
+model_name='text-davinci-003'
+model = OpenAI(model_name=model_name, temperature=1, openai_api_key=OPENAI_API_KEY, max_tokens=1028)
+
 
 # Create your views here.
 
@@ -30,24 +46,45 @@ class RegisterUser(CreateAPIView):
     
     # register view logic
     def post(self, request):
+       
+
         # create a serializer of the input data
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data['userData'])
+
         # if data are valid create user, else raise error
         if serializer.is_valid():
-            print(serializer)
+            
             # if not isinstance(int(serializer.data['zip_code']), int):
             #     raise ValueError('Zip code is invalid')
 
             # call create function to create user
-            self.create(serializer)    
-            # get user instance from database for token creations.
+            created_user = self.create(serializer)   
+            #  
+            # create prompts
+            # get user instance from database for token creations
             user = User.objects.get(username=serializer.data['username'].lower())
+
+
+            user_serializer = self.serializer_class(user)
+  
+            promptData = {
+                'gender': 'male',
+                'sensitivity_to_cold': request.data['promptData']['sensitivityToCold'],
+                'User': user_serializer.data['id']
+            }
+
+            # prompt_serializer.is_valid(raise_exception=True)
+            # PromptsSerializer.create(prompt_serializer)
+            prompt_serializer = PromptsSerializer(data=promptData)
+            prompt_serializer.is_valid()
+            prompt_serializer.save()
+            
+
             token = Token.objects.create(user=user)
 
             # return reponse
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         else:
-            print(serializer.data)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -103,7 +140,7 @@ class UpdateView(ObtainAuthToken):
             if data == 'zip_code':
                 if not isinstance(int(request.data[data]), int):
                     raise ValueError('zip code unacceptable, please check!')
-            user_serializer[data] = request.data[data].lower()
+            user_serializer[data] = request.data[data]
         
         # serializer updated data
         user_serializer = UserUpdateSerializer(user, data=user_serializer)
@@ -143,6 +180,23 @@ class GetUserView(APIView):
 
     
 # analyze survey question answer and associated weather to determine, if user will be cold today.
+class Clothing(BaseModel):
+    # reason: str = Field(description='why choose clothing')
+   name: list[str] = Field(description='item name')
+#    reason: dict = Field(description='reason for name item')
+
+class Outfit(BaseModel):
+    # data: Dict[str, List[str]] = Field(description='clothing items')
+    head: list[str] = Field(description='head item list')
+    tops: list[str] = Field(description='tops item list')
+    jacket: list[str] = Field(description='jacket item list')
+    bottom: list[str] = Field(description='bottom item list')
+    shoe: list[str] = Field(description='shoe item list')
+    accessory: list[str] = Field(description='accessory item list')
+    suggestion: str = Field(description='under 20 words, give a brief summary of the wear and a suggestion on outfit to wear.')
+
+
+
 class GiveFeedBack(APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [TokenAuthentication]
@@ -151,8 +205,100 @@ class GiveFeedBack(APIView):
         surveys = Survey.objects.filter(user=pk)
         survey_serializer = UserSurveySerializer(surveys, many=True)
         
-        # should i use openai or no.
-        # question should have tempeature and realfeel.
 
-        print(survey_serializer.data)
-        return Response(survey_serializer.data)
+        parser = PydanticOutputParser(pydantic_object=ClothingFeedBack)
+
+        prompt = PromptTemplate(
+            template='Anwser the user query.\n{format_instructions}\n{query}\n',
+            input_variables=['query'],
+            partial_variables={'format_instructions': parser.get_format_instructions()}
+        )
+
+        _input = prompt.format_prompt(query=query_input)
+        output = model(_input.to_string())
+        _output = parser.parse(output)
+
+
+        return Response(_output)
+
+@api_view(['GET'])
+def get_outfit(request):
+    parser = PydanticOutputParser(pydantic_object=ClothingFeedBack)
+
+    prompt = PromptTemplate(
+        template='Anwser the user query.\n{format_instructions}\n{query}\n',
+        input_variables=['query'],
+        partial_variables={'format_instructions': parser.get_format_instructions()}
+    )
+
+    _input = prompt.format_prompt(query=query_input_outfit)
+    output = model(_input.to_string())
+    _output = parser.parse(output)
+
+    return Response(_output, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def get_my_outfit(request):
+    # parser = PydanticOutputParser(pydantic_object=Outfit)
+    weather = request.data
+    gender = weather['gender']
+    sensitivity = weather['sensitivity']
+
+
+    query =f"""
+            You are a meteorologist and a fashion dresser. Given today's weather condition delimiter by ```. \
+            Generate an appropriate {gender} outfit for today's weather condition. following these rules. \
+             
+            1. Outfit should consider what tops, jacket, pants, footware and accessories to wear. \
+            2. return one item for jacket or not required. \   
+            3. only return one item for pants. \
+            4. only return one item for shoe. \
+            5. consider my sensitivity to cold, i usually feel {sensitivity}. \
+            6. return response in json format delimiter by ''' \
+            
+
+            tops should only consist of inner layer and mid layer.
+            jacket should be consist of tops outer layer and jacket, mark as not required if not appropriate for weather.
+
+            ```
+                Here are today's weather condition: \
+                    temperature high: {weather['temperature_high']},
+                    temperature low: {weather['temperature_low']},
+                    wind: {weather['wind']},
+                    humidity: {weather["humidity"]},
+                    condition: {weather["condition"]}
+            ```
+
+            '''
+                "head": list,
+                "tops": list,
+                "jacket": list,
+                "pants": list,
+                "shoe": list,
+                "accessory": list,
+                "suggestion": string
+            '''
+            
+            """
+
+    prompt = PromptTemplate(
+        # template='Anwser the user query.\n{format_instructions}\n{query}\n',
+        template='Anwser the user query.\n{query}\n',
+        input_variables=['query'],
+        # partial_variables={'format_instructions': parser.get_format_instructions()}
+    )
+
+    # print(parser.get_format_instructions())
+
+    _input = prompt.format_prompt(query=query)
+    output = model(_input.to_string())
+
+
+    # _output = parser.parse(output)
+    # _output = StructuredOutputParser.from_response_schemas(output)
+    _output = json.loads(output)
+
+
+
+    return Response(_output, status=status.HTTP_200_OK)

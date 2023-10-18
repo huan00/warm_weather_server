@@ -29,7 +29,16 @@ SECRET_KEY = 'django-insecure-a34&1r%a6op3onnew1e++y2d#kg8l_j+691dy8a+2*ubvfpcn9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000',
+# ]
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:3000",
+]
+CORS_ALLOW_HEADERS = ('content-disposition', 'accept-encoding',
+                      'content-type', 'accept', 'origin', 'authorization')
 AUTH_USER_MODEL = 'user.User'
 
 
@@ -46,12 +55,16 @@ INSTALLED_APPS = [
     'survey',
     'user',
     'rest_framework.authtoken',
-    'psycopg2'
+    'psycopg2',
+    'corsheaders',
+    'prompts'
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

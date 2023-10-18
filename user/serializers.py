@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from .models import User
 from survey.serializers import SurveyDetailSerializer
+from prompts.serializers import PromptsSerializer
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -15,9 +16,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                   'email', 
                   'first_name', 
                   'last_name', 
-                  'address', 
-                  'city', 
-                  'state', 
+                #   'address', 
+                #   'city', 
+                #   'state', 
                   'zip_code'
                   )
     
@@ -31,6 +32,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 class UserLoginSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    prompts = PromptsSerializer(read_only=True)
     
     class Meta:
         model = User
@@ -41,10 +43,11 @@ class UserLoginSerializer(serializers.ModelSerializer):
                   'email', 
                   'first_name', 
                   'last_name', 
-                  'address', 
-                  'city', 
-                  'state', 
-                  'zip_code'
+                #   'address', 
+                #   'city', 
+                #   'state', 
+                  'zip_code',
+                  'prompts'
                   )
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -60,9 +63,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                     'email',
                     'first_name', 
                     'last_name', 
-                    'address', 
-                    'city', 
-                    'state', 
+                    # 'address', 
+                    # 'city', 
+                    # 'state', 
                     'zip_code'
                   )
         
@@ -78,9 +81,9 @@ class UserSurveyDetailSerializer(serializers.ModelSerializer):
                   'email', 
                   'first_name', 
                   'last_name', 
-                  'address', 
-                  'city', 
-                  'state', 
+                #   'address', 
+                #   'city', 
+                #   'state', 
                   'zip_code',
                   'surveys',
                   )
